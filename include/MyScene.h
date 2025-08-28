@@ -2,6 +2,7 @@
 
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
+#include <utility>
 
 #include "Graph.h"
 #include "Obstacle.h"
@@ -35,12 +36,16 @@ public:
     QPointF getStartPoint() const;
     QPointF getEndPoint() const;
     
+    
+    void addObstacle(double x1, double y1, double x2, double y2, bool isUtm);
     void addObstacle(double posx, double posy, double width = 40, double height = 40);
     void addObstacle(Obstacle const&);
     
+    void addSafeZone(double x1, double y1, double x2, double y2, double mult, bool isUtm);
     void addSafeZone(double posx, double posy, double width = 40, double height = 40, double mult = 0.3);
     void addSafeZone(SafeZone const&);
     
+    void addDistanation(double posx, double posy, bool isUtm);
     void addDistanation(double posx, double posy);
     
 public slots:
@@ -74,4 +79,6 @@ public:
     std::unique_ptr<SceneServer> sceneServer;
     bool isStart = true;
     static bool isValidCoordinate(double x, double y);
+    
+    static std::pair<double, double> geographicToUtm(double longitude, double latitude);
 };

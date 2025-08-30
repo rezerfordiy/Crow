@@ -1,4 +1,5 @@
 #include "MyScene.h"
+#include "SceneService.h"
 #include <QGraphicsEllipseItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsLineItem>

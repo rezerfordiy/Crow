@@ -9,10 +9,10 @@
 #include "SafeZone.h"
 
 #include <memory>
-#include "SceneService.h"
 
 class QGraphicsLineItem;
 class QGraphicsEllipseItem;
+class SceneServer;
 
 class MyScene : public QGraphicsScene
 {

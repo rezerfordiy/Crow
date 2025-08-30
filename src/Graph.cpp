@@ -93,13 +93,11 @@ void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  std::vector<Obstacle> co
                 
                 if (!intersectsObstacle) {
                     double distance = abs(nodes[fromId], nodes[toId]);
-                    
-                    double safety_factor = calculateSafetyFactor(x1, y1, x2, y2, zones);
-                    
+                                        
                     Graph::Edge e;
                     e.from = fromId;
                     e.to = toId;
-                    e.weight = distance * safety_factor;
+                    e.weight = distance * calculateSafetyFactor(x1, y1, x2, y2, zones);
                     
                     edges.push_back(e);
                 }

@@ -7,7 +7,6 @@
 #include "SafeZone.h"
 #include <QPointF>
 #include <vector>
-#include <memory>
 #include <QObject>
 
 class SceneManager : public QObject {

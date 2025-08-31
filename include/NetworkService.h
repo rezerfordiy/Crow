@@ -2,7 +2,6 @@
 
 #include "SceneManager.h"
 #include "ProtocolHandler.h"
-#include <memory>
 #include <QObject>
 
 class NetworkService : public QObject {

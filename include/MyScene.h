@@ -9,10 +9,14 @@
 #include "SafeZone.h"
 
 #include <memory>
+#include "scene.grpc.pb.h"
 
+
+class SceneManager;
+class NetworkService;
 class QGraphicsLineItem;
 class QGraphicsEllipseItem;
-class SceneServer;
+
 
 class MyScene : public QGraphicsScene
 {
@@ -35,8 +39,13 @@ public:
     std::vector<SafeZone> getSafeZones() const;
     QPointF getStartPoint() const;
     QPointF getEndPoint() const;
-    
-    
+public slots:
+    void handleClearScene();
+    void handleUpdateScene(const scene::SceneConfig& config);
+    void handleAddObstacle(double x1, double y1, double width, double height);
+    void handleAddSafeZone(double x1, double y1, double width, double height, double mult);
+    void handleSetStartPoint(double x, double y);
+    void handleSetEndPoint(double x, double y);
     void addObstacle(double x1, double y1, double x2, double y2, bool isUtm);
     void addObstacle(double posx, double posy, double width = 40, double height = 40);
     void addObstacle(Obstacle const&);
@@ -47,10 +56,12 @@ public:
     
     void addDistanation(double posx, double posy, bool isUtm);
     void addDistanation(double posx, double posy);
-    
 public slots:
+
     void updateSceneFromConfig(const scene::SceneConfig& config);
-    
+    void onNetworkServiceStarted();
+    void onNetworkServiceStopped();
+    void onNetworkServiceError(const QString& error);
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
@@ -76,9 +87,12 @@ public:
     void clearVoronoiEdgesNodes();
 public:
     
-    std::unique_ptr<SceneServer> sceneServer;
+    std::unique_ptr<SceneManager> sceneManager;
+    std::unique_ptr<NetworkService> networkService;
     bool isStart = true;
     static bool isValidCoordinate(double x, double y);
     
     static std::pair<double, double> geographicToUtm(double longitude, double latitude);
+    
+    std::unique_ptr<SceneManager> createSceneManager();
 };

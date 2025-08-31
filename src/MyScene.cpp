@@ -1,5 +1,4 @@
 #include "MyScene.h"
-#include "SceneService.h"
 #include <QGraphicsEllipseItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsLineItem>
@@ -19,6 +18,9 @@
 #endif
 #include <cmath>
 #include <thread>
+
+#include "MySceneManager.h"
+#include "NetworkService.h"
 
 
 int MyScene::width = 800;
@@ -45,11 +47,49 @@ MyScene::MyScene(QObject *parent) : QGraphicsScene(parent), g(0, 0, width, heigh
     end->setPen(Qt::NoPen);
     addItem(end);
     
-    sceneServer = std::make_unique<SceneServer>(this);
-        std::thread serverThread([this]() {
-            sceneServer->Start();
-        });
-        serverThread.detach();
+    sceneManager = SceneManager::create(this);
+        
+        connect(sceneManager.get(), &SceneManager::requestClearScene,
+                this, &MyScene::handleClearScene, Qt::QueuedConnection);
+        
+        connect(sceneManager.get(), &SceneManager::requestUpdateScene,
+                this, &MyScene::handleUpdateScene, Qt::QueuedConnection);
+        
+        connect(sceneManager.get(), &SceneManager::requestAddObstacle,
+                this, &MyScene::handleAddObstacle, Qt::QueuedConnection);
+        
+        connect(sceneManager.get(), &SceneManager::requestAddSafeZone,
+                this, &MyScene::handleAddSafeZone, Qt::QueuedConnection);
+        
+        connect(sceneManager.get(), &SceneManager::requestSetStartPoint,
+                this, &MyScene::handleSetStartPoint, Qt::QueuedConnection);
+        
+        connect(sceneManager.get(), &SceneManager::requestSetEndPoint,
+                this, &MyScene::handleSetEndPoint, Qt::QueuedConnection);
+        
+    
+    networkService = NetworkService::create(sceneManager.get(), "0.0.0.0:50051", "grpc");
+    
+    connect(networkService.get(), &NetworkService::serviceStarted,
+            this, &MyScene::onNetworkServiceStarted);
+    connect(networkService.get(), &NetworkService::serviceStopped,
+            this, &MyScene::onNetworkServiceStopped);
+    connect(networkService.get(), &NetworkService::errorOccurred,
+            this, &MyScene::onNetworkServiceError);
+    
+    networkService->start();
+}
+
+void MyScene::onNetworkServiceStarted() {
+    qDebug() << "Network service successfully started";
+}
+
+void MyScene::onNetworkServiceStopped() {
+    qDebug() << "Network service stopped";
+}
+
+void MyScene::onNetworkServiceError(const QString& error) {
+    qWarning() << "Network service error:" << error;
 }
 
 void MyScene::drawBorder() {
@@ -80,7 +120,35 @@ std::vector<SafeZone> MyScene::getSafeZones() const { return zones; }
 QPointF MyScene::getStartPoint() const { return start->rect().center(); }
 QPointF MyScene::getEndPoint() const { return end->rect().center(); }
 
+void MyScene::handleClearScene() {
+    clearAll();
+}
 
+void MyScene::handleUpdateScene(const scene::SceneConfig& config) {
+    updateSceneFromConfig(config);
+}
+
+void MyScene::handleAddObstacle(double x1, double y1, double width, double height) {
+    addObstacle(x1, y1, width, height);
+}
+
+void MyScene::handleAddSafeZone(double x1, double y1, double width, double height, double mult) {
+    addSafeZone(x1, y1, width, height, mult);
+}
+
+void MyScene::handleSetStartPoint(double x, double y) {
+    bool wasStart = isStart;
+    isStart = true;
+    addDistanation(x, y);
+    isStart = wasStart;
+}
+
+void MyScene::handleSetEndPoint(double x, double y) {
+    bool wasStart = isStart;
+    isStart = false;
+    addDistanation(x, y);
+    isStart = wasStart;
+}
 
 void MyScene::addObstacle(double x1, double y1, double x2, double y2, bool isUtm) {
     if (isUtm) {
@@ -387,4 +455,9 @@ std::pair<double, double> MyScene::geographicToUtm(double longitude, double lati
     proj.forward(gP, uP);
     
     return {bg::get<0>(uP), bg::get<1>(uP)};
+}
+
+
+std::unique_ptr<SceneManager> MyScene::createSceneManager() {
+    return std::make_unique<MySceneManager>(this);
 }

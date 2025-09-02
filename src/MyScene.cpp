@@ -23,6 +23,8 @@
 #include "NetworkService.h"
 
 
+#include <QDebug>
+
 int MyScene::width = 800;
 int MyScene::height = 400;
 std::vector<Segment> MyScene::borders = {
@@ -32,8 +34,8 @@ std::vector<Segment> MyScene::borders = {
     Segment(Point(0, height), Point(0, 0))
 };
 
-MyScene::MyScene(QObject *parent) : QGraphicsScene(parent), g(0, 0, width, height) {
-    setSceneRect(0, 0, width, height);
+MyScene::MyScene(QObject *parent) : QGraphicsScene(parent), g(0, 0, width, height), topleft(0, 0), bottomright(width, height) {
+    setSceneRect(topleft.x() - 50, topleft.y() - 50, bottomright.x() - topleft.x() + 50, bottomright.y() - topleft.y() + 50);
     drawBorder();
     
     start = new QGraphicsEllipseItem(0 - 3, 0 - 3, 6, 6);
@@ -68,7 +70,7 @@ MyScene::MyScene(QObject *parent) : QGraphicsScene(parent), g(0, 0, width, heigh
                 this, &MyScene::handleSetEndPoint, Qt::QueuedConnection);
         
     
-    networkService = NetworkService::create(sceneManager.get(), "0.0.0.0:50051", "grpc");
+    networkService = NetworkService::create(sceneManager.get(), "0.0.0.0:50051", "http");
     
     connect(networkService.get(), &NetworkService::serviceStarted,
             this, &MyScene::onNetworkServiceStarted);
@@ -93,6 +95,7 @@ void MyScene::onNetworkServiceError(const QString& error) {
 }
 
 void MyScene::drawBorder() {
+    return;
     for (QGraphicsLineItem* border : borderItems) {
         removeItem(border);
         delete border;
@@ -157,6 +160,15 @@ void MyScene::addObstacle(double x1, double y1, double x2, double y2, bool isUtm
         auto p1 = geographicToUtm(x1, y1);
         auto p2 = geographicToUtm(x2, y2);
         addObstacle(p1.first, p1.second, p2.first - p1.first, p2.second - p1.second);
+        
+
+
+        
+        updateBorders(p1, _isFirst);
+        if (_isFirst) {
+            _isFirst = false;
+        }
+        updateBorders(p2);
     }
     
 }
@@ -181,6 +193,16 @@ void MyScene::addSafeZone(double x1, double y1, double x2, double y2, double mul
         auto p1 = geographicToUtm(x1, y1);
         auto p2 = geographicToUtm(x2, y2);
         addSafeZone(p1.first, p1.second, p2.first - p1.first, p2.second - p1.second, mult);
+        
+        
+        
+        
+        
+        updateBorders(p1, _isFirst);
+        if (_isFirst) {
+            _isFirst = false;
+        }
+        updateBorders(p2);
     }
     
 }
@@ -201,7 +223,11 @@ void MyScene::addDistanation(double posx, double posy, bool isUtm) {
     } else {
         auto p =geographicToUtm(posx, posy);
         addDistanation(p.first, p.second);
-
+                
+        updateBorders(p, _isFirst);
+        if (_isFirst) {
+            _isFirst = false;
+        }
     }
 }
 
@@ -227,30 +253,31 @@ void MyScene::addDistanation(double posx, double posy) {
 }
 
 void MyScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    if (event->button() == Qt::LeftButton) {
+    if (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier)) {
+        QGraphicsScene::mousePressEvent(event);
+        return;
+    }
+    
+    if (event->button() == Qt::RightButton) {
         double x = event->scenePos().x();
         double y = event->scenePos().y();
-    
-        if (x < 0 || x > width || y < 0 || y > height) {
-            return;
-        }
             
         if (mode == 1) {
             addObstacle(x, y);
-                        
         } else if (mode == 0) {
             addDistanation(x, y);
         } else if (mode == 2) {
             addSafeZone(x, y);
         }
         rebuildVoronoiDiagram();
+        event->accept();
+    } else {
+        QGraphicsScene::mousePressEvent(event);
     }
-    
-    QGraphicsScene::mousePressEvent(event);
 }
 
 void MyScene::rebuildVoronoiDiagram() {
-    std::vector<Segment> all = borders;
+    std::vector<Segment> all; // = borders;
     
     for (auto const& ob : obstacles) {
         auto segments = ob.getSegments();
@@ -262,7 +289,8 @@ void MyScene::rebuildVoronoiDiagram() {
 
 void MyScene::rebuildVoronoiDiagram(std::vector<Segment> const& segments) {
     clearVoronoiEdgesNodes();
-    
+    setSceneRect(topleft.x() - 50, topleft.y() - 50, bottomright.x() - topleft.x() + 50, bottomright.y() - topleft.y() + 50);
+
     if (segments.empty()) return;
     
     try {
@@ -390,7 +418,7 @@ void MyScene::clearAll() {
     drawBorder();
 }
 bool MyScene::isValidCoordinate(double x, double y)  {
-    return x >= -100 && x <= width + 100 && y >= -100 && y <= height + 100;
+    return true;
 }
 
 ///SERVICE
@@ -398,25 +426,30 @@ bool MyScene::isValidCoordinate(double x, double y)  {
 void MyScene::updateSceneFromConfig(const scene::SceneConfig& config) {
     clearAll();
     
+    bool UTM = false;
+    
+    _isFirst = true;
+    
     if (config.has_start()) {
-        addDistanation(config.start().x(), config.start().y());
+        addDistanation(config.start().x(), config.start().y(), UTM);
     }
     
     if (config.has_end()) {
-        addDistanation(config.end().x(), config.end().y());
+        addDistanation(config.end().x(), config.end().y(), UTM);
     }
     
     for (const auto& obstacle : config.obstacles()) {
         addObstacle(obstacle.topleft().x(), obstacle.topleft().y(),
-                             obstacle.bottomright().x() - obstacle.topleft().x(), obstacle.bottomright().y() - obstacle.topleft().y());
+                             obstacle.bottomright().x(), obstacle.bottomright().y(), UTM);
     }
     
     for (const auto& zone : config.safezones()) {
         addSafeZone(zone.topleft().x(), zone.topleft().y(),
-                    zone.bottomright().x() - zone.topleft().x(), zone.bottomright().y() - zone.topleft().y());
+                    zone.bottomright().x(), zone.bottomright().y(), 0.3, UTM);
     }
-    
+    _isFirst = false;
     rebuildVoronoiDiagram();
+    emit centerRequested();
 }
 
 
@@ -454,10 +487,38 @@ std::pair<double, double> MyScene::geographicToUtm(double longitude, double lati
     
     proj.forward(gP, uP);
     
+    
+    
+
     return {bg::get<0>(uP), bg::get<1>(uP)};
 }
 
 
 std::unique_ptr<SceneManager> MyScene::createSceneManager() {
     return std::make_unique<MySceneManager>(this);
+}
+
+void MyScene::updateBorders(std::pair<double, double> const& p, bool first) {
+    updateBorders(QPointF(p.first, p.second), first);
+
+}
+void MyScene::updateBorders(QPointF const& p, bool first) {
+    if (first) {
+        topleft = p;
+        bottomright = p;
+        return;
+    }
+    topleft.setX(qMin(topleft.x(), p.x()));
+    topleft.setY(qMin(topleft.y(), p.y()));
+    bottomright.setX(qMax(bottomright.x(), p.x() ));
+    bottomright.setY(qMax(bottomright.y(), p.y() ));
+}
+
+
+
+QPointF MyScene::getTopleft() const {
+    return topleft;
+}
+QPointF MyScene::getBottomright() const {
+    return bottomright;
 }

@@ -57,6 +57,10 @@ public slots:
     
     void addDistanation(double posx, double posy, bool isUtm);
     void addDistanation(double posx, double posy);
+    
+signals:
+    void centerRequested();
+
 public slots:
 
     void updateSceneFromConfig(const scene::SceneConfig& config);
@@ -96,4 +100,16 @@ public:
     static std::pair<double, double> geographicToUtm(double longitude, double latitude);
     
     std::unique_ptr<SceneManager> createSceneManager();
+    
+
+private:
+    bool _isFirst = false;
+    QPointF topleft;
+    QPointF bottomright;
+    void updateBorders(std::pair<double, double> const& p, bool first = false);
+    void updateBorders(QPointF const&, bool first = false);
+public:
+    QPointF getTopleft() const;
+    QPointF getBottomright() const;
+
 };

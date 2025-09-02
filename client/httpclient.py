@@ -7,12 +7,16 @@ from crow.use_cases import sceneconfig_use_cases as uc
 from crow.serializers import domain_serializer as ser
 
 sceneconfig1 = {
-    'start': {'x': 100, 'y': 100},
-    'end': {'x': 140, 'y': 140}, 
+    'start': {'x': 55.663813, 'y': 49.209489},
+    'end': {'x': 55.67152, 'y': 49.20927},
     'obstacles': [
         {
-            'topleft': {'x': 200, 'y': 200},
-            'bottomright': {'x': 240, 'y': 240}
+            'topleft': {'x': 55.66850, 'y': 49.20593},
+            'bottomright': {'x': 55.66714, 'y': 49.21664}
+        },
+        {
+            'topleft': {'x': 55.66916, 'y': 49.19929},
+            'bottomright': {'x': 55.66856340102695, 'y': 49.201106006894655}
         }
     ],
     'safezones': []

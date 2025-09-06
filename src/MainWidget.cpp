@@ -40,7 +40,6 @@ void MainWidget::clearScene() {
 
 void MainWidget::centerOn() {
 
-
     QPointF center = (scene->getTopleft() + scene->getBottomright()) / 2;
     view->centerOn(center + QPointF(0, 0));
     

@@ -160,6 +160,8 @@ void MyScene::addObstacle(double x1, double y1, double x2, double y2, bool isUtm
         auto p1 = geographicToUtm(x1, y1);
         auto p2 = geographicToUtm(x2, y2);
         addObstacle(p1.first, p1.second, p2.first - p1.first, p2.second - p1.second);
+        updateBorders(p1);
+        updateBorders(p2);
     }
     
 }
@@ -184,6 +186,8 @@ void MyScene::addSafeZone(double x1, double y1, double x2, double y2, double mul
         auto p1 = geographicToUtm(x1, y1);
         auto p2 = geographicToUtm(x2, y2);
         addSafeZone(p1.first, p1.second, p2.first - p1.first, p2.second - p1.second, mult);
+        updateBorders(p1);
+        updateBorders(p2);
     }
     
 }
@@ -204,6 +208,7 @@ void MyScene::addDistanation(double posx, double posy, bool isUtm) {
     } else {
         auto p =geographicToUtm(posx, posy);
         addDistanation(p.first, p.second);
+        updateBorders(p);
     }
 }
 
@@ -399,7 +404,7 @@ bool MyScene::isValidCoordinate(double x, double y)  {
 
 
 void MyScene::sendHttpRequest() {
-    QUrl url("http://127.0.0.1:8080/get_route");
+    QUrl url("http://127.0.0.1:5000/get_route");
     QNetworkRequest request(url);
     
     QNetworkReply *reply = manager->get(request);
@@ -430,13 +435,13 @@ void MyScene::updateFromJson(const QJsonObject& json) {
         if (json.contains("start")) {
             QJsonObject start = json["start"].toObject();
             addDistanation(start["x"].toDouble(), start["y"].toDouble(), UTM);
-            updateBorders(start["x"].toDouble(), start["y"].toDouble());
+//            updateBorders(start["x"].toDouble(), start["y"].toDouble());
         }
         
         if (json.contains("end")) {
             QJsonObject end = json["end"].toObject();
             addDistanation(end["x"].toDouble(), end["y"].toDouble(), UTM);
-            updateBorders(end["x"].toDouble(), end["y"].toDouble());
+//            updateBorders(end["x"].toDouble(), end["y"].toDouble());
         }
         
         if (json.contains("obstacles")) {
@@ -450,14 +455,14 @@ void MyScene::updateFromJson(const QJsonObject& json) {
                             obstacle["bottomright"].toObject()["y"].toDouble(),
                             UTM
                             );
-                updateBorders(
-                              obstacle["topleft"].toObject()["x"].toDouble(),
-                              obstacle["topleft"].toObject()["y"].toDouble()
-                              );
-                updateBorders(
-                              obstacle["bottomright"].toObject()["x"].toDouble(),
-                              obstacle["bottomright"].toObject()["y"].toDouble()
-                              );
+//                updateBorders(
+//                              obstacle["topleft"].toObject()["x"].toDouble(),
+//                              obstacle["topleft"].toObject()["y"].toDouble()
+//                              );
+//                updateBorders(
+//                              obstacle["bottomright"].toObject()["x"].toDouble(),
+//                              obstacle["bottomright"].toObject()["y"].toDouble()
+//                              );
             }
         }
         
@@ -473,20 +478,24 @@ void MyScene::updateFromJson(const QJsonObject& json) {
                             0.3,
                             UTM
                             );
-                updateBorders(
-                              zone["topleft"].toObject()["x"].toDouble(),
-                              zone["topleft"].toObject()["y"].toDouble()
-                              );
-                updateBorders(
-                              zone["bottomright"].toObject()["x"].toDouble(),
-                              zone["bottomright"].toObject()["y"].toDouble()
-                              );
+//                updateBorders(
+//                              zone["topleft"].toObject()["x"].toDouble(),
+//                              zone["topleft"].toObject()["y"].toDouble()
+//                              );
+//                updateBorders(
+//                              zone["bottomright"].toObject()["x"].toDouble(),
+//                              zone["bottomright"].toObject()["y"].toDouble()
+//                              );
 
             }
         }
         
+        
         setSceneRect(topleft.x() - 50, topleft.y() - 50, bottomright.x() - topleft.x() + 50, bottomright.y() - topleft.y() + 50);
         rebuildVoronoiDiagram();
+        
+        emit centerRequested();
+        
     } catch (const std::exception& e) {
         QMessageBox::critical(nullptr, "Ошибка", "Ошибка при обработке сцены");
         QCoreApplication::exit(1);

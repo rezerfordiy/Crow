@@ -14,7 +14,7 @@ deactivate
 pip3 install -r requirements/dev.txt
 ```
 
-# send POST request 
+# manage server
 ```bash
 python3 app.py
 ```

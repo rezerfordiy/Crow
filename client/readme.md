@@ -11,10 +11,10 @@ deactivate
 ```
 # install pip
 ```bash
-pip3 install -r requirements.txt  
+pip3 install -r requirements/dev.txt
 ```
 
 # send POST request 
 ```bash
-python3 httpclient.py
+python3 app.py
 ```

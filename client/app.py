@@ -9,3 +9,7 @@ def create_app(config_object=DevConfig):
     app.config.from_object(config_object)
     app.register_blueprint(sceneconfig.blueprint)
     return app
+
+
+if __name__ == '__main__':
+    create_app().run(debug=True)

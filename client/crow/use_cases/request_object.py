@@ -4,7 +4,7 @@ from crow.shared import request_object as req
 class SceneConfigGetRequestObject(req.ValidRequestObject):
 
     @classmethod
-    def from_dict(cls, adict):
+    def from_dict(cls):
         # invalid_req = InvalidRequestObject()
 
         # if 'filters' in adict and not isinstance(adict['filters'], collections.Mapping):

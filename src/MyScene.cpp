@@ -19,10 +19,12 @@
 #include <cmath>
 #include <thread>
 
-#include "MySceneManager.h"
-#include "NetworkService.h"
-
-
+#include <QJsonDocument>
+#include <QNetworkReply>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QMessageBox>
+#include <QApplication>
 #include <QDebug>
 
 int MyScene::width = 800;
@@ -34,7 +36,9 @@ std::vector<Segment> MyScene::borders = {
     Segment(Point(0, height), Point(0, 0))
 };
 
-MyScene::MyScene(QObject *parent) : QGraphicsScene(parent), g(0, 0, width, height), topleft(0, 0), bottomright(width, height) {
+MyScene::MyScene(QObject *parent) : QGraphicsScene(parent), g(0, 0, width, height), topleft(0, 0), bottomright(width, height),
+    manager(new  QNetworkAccessManager(this)) {
+    
     setSceneRect(topleft.x() - 50, topleft.y() - 50, bottomright.x() - topleft.x() + 50, bottomright.y() - topleft.y() + 50);
     drawBorder();
     
@@ -49,50 +53,46 @@ MyScene::MyScene(QObject *parent) : QGraphicsScene(parent), g(0, 0, width, heigh
     end->setPen(Qt::NoPen);
     addItem(end);
     
-    sceneManager = SceneManager::create(this);
-        
-        connect(sceneManager.get(), &SceneManager::requestClearScene,
-                this, &MyScene::handleClearScene, Qt::QueuedConnection);
-        
-        connect(sceneManager.get(), &SceneManager::requestUpdateScene,
-                this, &MyScene::handleUpdateScene, Qt::QueuedConnection);
-        
-        connect(sceneManager.get(), &SceneManager::requestAddObstacle,
-                this, &MyScene::handleAddObstacle, Qt::QueuedConnection);
-        
-        connect(sceneManager.get(), &SceneManager::requestAddSafeZone,
-                this, &MyScene::handleAddSafeZone, Qt::QueuedConnection);
-        
-        connect(sceneManager.get(), &SceneManager::requestSetStartPoint,
-                this, &MyScene::handleSetStartPoint, Qt::QueuedConnection);
-        
-        connect(sceneManager.get(), &SceneManager::requestSetEndPoint,
-                this, &MyScene::handleSetEndPoint, Qt::QueuedConnection);
-        
+    connect(this, &MyScene::jsonReceived, this, &MyScene::updateFromJson);
     
-    networkService = NetworkService::create(sceneManager.get(), "0.0.0.0:50051", "http");
+    sendHttpRequest();
     
-    connect(networkService.get(), &NetworkService::serviceStarted,
-            this, &MyScene::onNetworkServiceStarted);
-    connect(networkService.get(), &NetworkService::serviceStopped,
-            this, &MyScene::onNetworkServiceStopped);
-    connect(networkService.get(), &NetworkService::errorOccurred,
-            this, &MyScene::onNetworkServiceError);
     
-    networkService->start();
+    
+//
+//    sceneManager = SceneManager::create(this);
+//        
+//        connect(sceneManager.get(), &SceneManager::requestClearScene,
+//                this, &MyScene::handleClearScene, Qt::QueuedConnection);
+//        
+//        connect(sceneManager.get(), &SceneManager::requestUpdateScene,
+//                this, &MyScene::handleUpdateScene, Qt::QueuedConnection);
+//        
+//        connect(sceneManager.get(), &SceneManager::requestAddObstacle,
+//                this, &MyScene::handleAddObstacle, Qt::QueuedConnection);
+//        
+//        connect(sceneManager.get(), &SceneManager::requestAddSafeZone,
+//                this, &MyScene::handleAddSafeZone, Qt::QueuedConnection);
+//        
+//        connect(sceneManager.get(), &SceneManager::requestSetStartPoint,
+//                this, &MyScene::handleSetStartPoint, Qt::QueuedConnection);
+//        
+//        connect(sceneManager.get(), &SceneManager::requestSetEndPoint,
+//                this, &MyScene::handleSetEndPoint, Qt::QueuedConnection);
+//        
+//    
+//    networkService = NetworkService::create(sceneManager.get(), "0.0.0.0:50051", "http");
+//    
+//    connect(networkService.get(), &NetworkService::serviceStarted,
+//            this, &MyScene::onNetworkServiceStarted);
+//    connect(networkService.get(), &NetworkService::serviceStopped,
+//            this, &MyScene::onNetworkServiceStopped);
+//    connect(networkService.get(), &NetworkService::errorOccurred,
+//            this, &MyScene::onNetworkServiceError);
+//    
+//    networkService->start();
 }
 
-void MyScene::onNetworkServiceStarted() {
-    qDebug() << "Network service successfully started";
-}
-
-void MyScene::onNetworkServiceStopped() {
-    qDebug() << "Network service stopped";
-}
-
-void MyScene::onNetworkServiceError(const QString& error) {
-    qWarning() << "Network service error:" << error;
-}
 
 void MyScene::drawBorder() {
     return;
@@ -127,9 +127,9 @@ void MyScene::handleClearScene() {
     clearAll();
 }
 
-void MyScene::handleUpdateScene(const scene::SceneConfig& config) {
-    updateSceneFromConfig(config);
-}
+//void MyScene::handleUpdateScene(const scene::SceneConfig& config) {
+//    updateSceneFromConfig(config);
+//}
 
 void MyScene::handleAddObstacle(double x1, double y1, double width, double height) {
     addObstacle(x1, y1, width, height);
@@ -160,15 +160,6 @@ void MyScene::addObstacle(double x1, double y1, double x2, double y2, bool isUtm
         auto p1 = geographicToUtm(x1, y1);
         auto p2 = geographicToUtm(x2, y2);
         addObstacle(p1.first, p1.second, p2.first - p1.first, p2.second - p1.second);
-        
-
-
-        
-        updateBorders(p1, _isFirst);
-        if (_isFirst) {
-            _isFirst = false;
-        }
-        updateBorders(p2);
     }
     
 }
@@ -193,16 +184,6 @@ void MyScene::addSafeZone(double x1, double y1, double x2, double y2, double mul
         auto p1 = geographicToUtm(x1, y1);
         auto p2 = geographicToUtm(x2, y2);
         addSafeZone(p1.first, p1.second, p2.first - p1.first, p2.second - p1.second, mult);
-        
-        
-        
-        
-        
-        updateBorders(p1, _isFirst);
-        if (_isFirst) {
-            _isFirst = false;
-        }
-        updateBorders(p2);
     }
     
 }
@@ -223,11 +204,6 @@ void MyScene::addDistanation(double posx, double posy, bool isUtm) {
     } else {
         auto p =geographicToUtm(posx, posy);
         addDistanation(p.first, p.second);
-                
-        updateBorders(p, _isFirst);
-        if (_isFirst) {
-            _isFirst = false;
-        }
     }
 }
 
@@ -421,36 +397,134 @@ bool MyScene::isValidCoordinate(double x, double y)  {
     return true;
 }
 
-///SERVICE
-///
-void MyScene::updateSceneFromConfig(const scene::SceneConfig& config) {
-    clearAll();
+
+void MyScene::sendHttpRequest() {
+    QUrl url("http://127.0.0.1:8080/get_route");
+    QNetworkRequest request(url);
     
-    bool UTM = false;
+    QNetworkReply *reply = manager->get(request);
     
-    _isFirst = true;
-    
-    if (config.has_start()) {
-        addDistanation(config.start().x(), config.start().y(), UTM);
-    }
-    
-    if (config.has_end()) {
-        addDistanation(config.end().x(), config.end().y(), UTM);
-    }
-    
-    for (const auto& obstacle : config.obstacles()) {
-        addObstacle(obstacle.topleft().x(), obstacle.topleft().y(),
-                             obstacle.bottomright().x(), obstacle.bottomright().y(), UTM);
-    }
-    
-    for (const auto& zone : config.safezones()) {
-        addSafeZone(zone.topleft().x(), zone.topleft().y(),
-                    zone.bottomright().x(), zone.bottomright().y(), 0.3, UTM);
-    }
-    _isFirst = false;
-    rebuildVoronoiDiagram();
-    emit centerRequested();
+    connect(reply, &QNetworkReply::finished, [=]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
+            if (!jsonDoc.isNull()) {
+                emit jsonReceived(jsonDoc.object());
+            } else {
+                QMessageBox::critical(nullptr, "Ошибка", "Пустой json");
+                QCoreApplication::exit(1);
+            }
+        } else {
+            qDebug() << "Error:" << reply->errorString();
+            QMessageBox::critical(nullptr, "Ошибка", "Нет сети");
+            QCoreApplication::exit(1);
+        }
+        reply->deleteLater();
+    });
 }
+
+void MyScene::updateFromJson(const QJsonObject& json) {
+    clearAll();
+    bool UTM = false;
+    _isFirst = true;
+    try {
+        if (json.contains("start")) {
+            QJsonObject start = json["start"].toObject();
+            addDistanation(start["x"].toDouble(), start["y"].toDouble(), UTM);
+            updateBorders(start["x"].toDouble(), start["y"].toDouble());
+        }
+        
+        if (json.contains("end")) {
+            QJsonObject end = json["end"].toObject();
+            addDistanation(end["x"].toDouble(), end["y"].toDouble(), UTM);
+            updateBorders(end["x"].toDouble(), end["y"].toDouble());
+        }
+        
+        if (json.contains("obstacles")) {
+            QJsonArray obstacles = json["obstacles"].toArray();
+            for (const auto& ob : obstacles) {
+                QJsonObject obstacle = ob.toObject();
+                addObstacle(
+                            obstacle["topleft"].toObject()["x"].toDouble(),
+                            obstacle["topleft"].toObject()["y"].toDouble(),
+                            obstacle["bottomright"].toObject()["x"].toDouble(),
+                            obstacle["bottomright"].toObject()["y"].toDouble(),
+                            UTM
+                            );
+                updateBorders(
+                              obstacle["topleft"].toObject()["x"].toDouble(),
+                              obstacle["topleft"].toObject()["y"].toDouble()
+                              );
+                updateBorders(
+                              obstacle["bottomright"].toObject()["x"].toDouble(),
+                              obstacle["bottomright"].toObject()["y"].toDouble()
+                              );
+            }
+        }
+        
+        if (json.contains("safezones")) {
+            QJsonArray safeZones = json["safezones"].toArray();
+            for (const auto& sz : safeZones) {
+                QJsonObject zone = sz.toObject();
+                addSafeZone(
+                            zone["topleft"].toObject()["x"].toDouble(),
+                            zone["topleft"].toObject()["y"].toDouble(),
+                            zone["bottomright"].toObject()["x"].toDouble(),
+                            zone["bottomright"].toObject()["y"].toDouble(),
+                            0.3,
+                            UTM
+                            );
+                updateBorders(
+                              zone["topleft"].toObject()["x"].toDouble(),
+                              zone["topleft"].toObject()["y"].toDouble()
+                              );
+                updateBorders(
+                              zone["bottomright"].toObject()["x"].toDouble(),
+                              zone["bottomright"].toObject()["y"].toDouble()
+                              );
+
+            }
+        }
+        
+        setSceneRect(topleft.x() - 50, topleft.y() - 50, bottomright.x() - topleft.x() + 50, bottomright.y() - topleft.y() + 50);
+        rebuildVoronoiDiagram();
+    } catch (const std::exception& e) {
+        QMessageBox::critical(nullptr, "Ошибка", "Ошибка при обработке сцены");
+        QCoreApplication::exit(1);
+    } catch (...) {
+        QMessageBox::critical(nullptr, "Ошибка", "Неизвестные ошибки");
+        QCoreApplication::exit(1);
+    }
+}
+
+///SERVICE
+//void MyScene::updateSceneFromConfig(const scene::SceneConfig& config) {
+//    clearAll();
+//    
+//    bool UTM = false;
+//    
+//    _isFirst = true;
+//    
+//    if (config.has_start()) {
+//        addDistanation(config.start().x(), config.start().y(), UTM);
+//    }
+//    
+//    if (config.has_end()) {
+//        addDistanation(config.end().x(), config.end().y(), UTM);
+//    }
+//    
+//    for (const auto& obstacle : config.obstacles()) {
+//        addObstacle(obstacle.topleft().x(), obstacle.topleft().y(),
+//                             obstacle.bottomright().x(), obstacle.bottomright().y(), UTM);
+//    }
+//    
+//    for (const auto& zone : config.safezones()) {
+//        addSafeZone(zone.topleft().x(), zone.topleft().y(),
+//                    zone.bottomright().x(), zone.bottomright().y(), 0.3, UTM);
+//    }
+//    _isFirst = false;
+//    rebuildVoronoiDiagram();
+//    emit centerRequested();
+//}
 
 
 
@@ -494,8 +568,13 @@ std::pair<double, double> MyScene::geographicToUtm(double longitude, double lati
 }
 
 
-std::unique_ptr<SceneManager> MyScene::createSceneManager() {
-    return std::make_unique<MySceneManager>(this);
+//std::unique_ptr<SceneManager> MyScene::createSceneManager() {
+//    return std::make_unique<MySceneManager>(this);
+//}
+
+void MyScene::updateBorders(double x, double y, bool first) {
+    updateBorders(QPointF(x, y), first);
+
 }
 
 void MyScene::updateBorders(std::pair<double, double> const& p, bool first) {
@@ -503,7 +582,8 @@ void MyScene::updateBorders(std::pair<double, double> const& p, bool first) {
 
 }
 void MyScene::updateBorders(QPointF const& p, bool first) {
-    if (first) {
+    if (_isFirst) {
+        _isFirst = false;
         topleft = p;
         bottomright = p;
         return;

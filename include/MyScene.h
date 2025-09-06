@@ -8,15 +8,12 @@
 #include "Graph.h"
 #include "Obstacle.h"
 #include "SafeZone.h"
-
-#include <memory>
-#include "scene.grpc.pb.h"
+#include <QNetworkAccessManager>
 
 
-class SceneManager;
-class NetworkService;
 class QGraphicsLineItem;
 class QGraphicsEllipseItem;
+class QJsonDocument;
 
 
 class MyScene : public QGraphicsScene
@@ -42,7 +39,7 @@ public:
     QPointF getEndPoint() const;
 public slots:
     void handleClearScene();
-    void handleUpdateScene(const scene::SceneConfig& config);
+//    void handleUpdateScene(const scene::SceneConfig& config);
     void handleAddObstacle(double x1, double y1, double width, double height);
     void handleAddSafeZone(double x1, double y1, double width, double height, double mult);
     void handleSetStartPoint(double x, double y);
@@ -60,13 +57,15 @@ public slots:
     
 signals:
     void centerRequested();
+    void jsonReceived(const QJsonObject& json);
 
+    
+    
 public slots:
-
-    void updateSceneFromConfig(const scene::SceneConfig& config);
-    void onNetworkServiceStarted();
-    void onNetworkServiceStopped();
-    void onNetworkServiceError(const QString& error);
+    void sendHttpRequest();
+    void updateFromJson(const QJsonObject& json);
+    
+    // void updateSceneFromConfig(const scene::SceneConfig& config);
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
@@ -92,20 +91,22 @@ public:
     void clearVoronoiEdgesNodes();
 public:
     
-    std::unique_ptr<SceneManager> sceneManager;
-    std::unique_ptr<NetworkService> networkService;
+ 
     bool isStart = true;
     static bool isValidCoordinate(double x, double y);
     
     static std::pair<double, double> geographicToUtm(double longitude, double latitude);
     
-    std::unique_ptr<SceneManager> createSceneManager();
     
 
 private:
+    std::unique_ptr<QNetworkAccessManager> manager;
+
+    
     bool _isFirst = false;
     QPointF topleft;
     QPointF bottomright;
+    void updateBorders(double x, double y, bool first = false);
     void updateBorders(std::pair<double, double> const& p, bool first = false);
     void updateBorders(QPointF const&, bool first = false);
 public:

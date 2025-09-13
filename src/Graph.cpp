@@ -1,29 +1,12 @@
-#include "Graph.h"
 
 #include <unordered_map>
 #include <cmath>
-#include "MyScene.h"
 
-Graph::Graph(double x1, double y1, double x2, double y2) {
-    Graph::Node start, end;
-    start.id = 0;
-    start.x = x1;
-    start.y = y1;
-    start.isPrimary = false;
-    
-    end.id = 1;
-    end.x = x2;
-    end.y = y2;
-    end.isPrimary = false;
-    nodes.push_back(start);
-    nodes.push_back(end);
-    
-    Graph::Edge e;
-    e.from = 0;
-    e.to = 1;
-    edges.push_back(e);
-    buildAdjacencyMatrix();
-    buildAdjacencyList();
+#include "MyScene.h"
+#include "SceneData.h"
+#include "Graph.h"
+
+Graph::Graph() {
 }
 
 void Graph::clear() {
@@ -39,15 +22,23 @@ double Graph::abs(const Graph::Node& v1, const Graph::Node& v2) const {
     return std::sqrt(dx*dx + dy*dy);
 }
 
-void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  std::vector<Obstacle> const& obstacles, std::vector<SafeZone> const& zones,
-                             double startX, double startY, double endX, double endY) {
+void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  SceneData const* data) {
     clear();
+    
+    auto obstacles = data->getObstacles();
+    auto zones = data->getSafeZones();
+    auto startPoint = data->getStartPoint();
+    auto endPoint = data->getEndPoint();
+    
+    auto startX = startPoint.x();
+    auto startY = startPoint.y();
+    auto endX = endPoint.x();
+    auto endY = endPoint.y();
     
     std::unordered_map<const VoronoiDiagram::vertex_type*, int> vertexIdMap;
     int vertexId = 0;
     
     for (const auto& vertex : vd.vertices()) {
-        if (MyScene::isValidCoordinate(vertex.x(), vertex.y())) {
             Graph::Node v;
             v.id = vertexId;
             v.x = vertex.x();
@@ -66,7 +57,7 @@ void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  std::vector<Obstacle> co
             nodes.push_back(v);
             vertexIdMap[&vertex] = vertexId;
             vertexId++;
-        }
+        
     }
     
     for (const auto& edge : vd.edges()) {

@@ -5,7 +5,6 @@
 class QGraphicsScene;
 class QWidget;
 
-
 class ScrollableView : public QGraphicsView {
     Q_OBJECT
 public:
@@ -14,4 +13,3 @@ public:
 protected:
     void wheelEvent(QWheelEvent *event) override;
 };
-

@@ -1,6 +1,6 @@
-#include "AStar.h"
 #include <queue>
 
+#include "AStar.h"
 
 
 std::vector<int> AStar::findPath(int from, int to, Graph const& g) {

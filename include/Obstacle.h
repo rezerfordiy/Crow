@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Types.h"
 #include <vector>
+
+#include "Types.h"
 
 class QGraphicsRectItem;
 

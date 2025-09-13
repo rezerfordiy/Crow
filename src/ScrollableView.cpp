@@ -1,9 +1,9 @@
 
-#include "ScrollableView.h"
 #include <QGraphicsScene>
 #include <QApplication>
 #include <QMouseEvent>
 
+#include "ScrollableView.h"
 
 
 ScrollableView::ScrollableView(QGraphicsScene *scene, QWidget *parent) : QGraphicsView(scene, parent) {
@@ -28,5 +28,3 @@ void ScrollableView::wheelEvent(QWheelEvent *event)  {
         QGraphicsView::wheelEvent(event);
     }
 }
-
-

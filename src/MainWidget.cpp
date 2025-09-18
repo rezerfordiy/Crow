@@ -35,7 +35,6 @@ MainWidget::MainWidget(QWidget* parent) : QWidget(parent),
     resize(1400, 1000);
     
     networkManager->sendHttpRequest();
-
 }
 
 void MainWidget::centerOn() {

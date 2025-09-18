@@ -1,8 +1,5 @@
 
-#include <unordered_map>
-#include <cmath>
 
-#include "MyScene.h"
 #include "SceneData.h"
 #include "Graph.h"
 
@@ -22,7 +19,7 @@ double Graph::abs(const Graph::Node& v1, const Graph::Node& v2) const {
     return std::sqrt(dx*dx + dy*dy);
 }
 
-void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  SceneData const* data) {
+void Graph::buildFromVoronoi(const VoronoiDiagram& vd, SceneData const* data) {
     clear();
     
     auto obstacles = data->getObstacles();
@@ -38,28 +35,48 @@ void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  SceneData const* data) {
     std::unordered_map<const VoronoiDiagram::vertex_type*, int> vertexIdMap;
     int vertexId = 0;
     
-    for (const auto& vertex : vd.vertices()) {
-            Graph::Node v;
-            v.id = vertexId;
-            v.x = vertex.x();
-            v.y = vertex.y();
-            v.isPrimary = true;
-            
-            bool insideObstacle = false;
-            for (const auto& obstacle : obstacles) {
-                if (obstacle.isPointInside(v.x, v.y)) {
-                    insideObstacle = true;
-                    break;
-                }
-            }
-            if (insideObstacle) continue;
-            
-            nodes.push_back(v);
-            vertexIdMap[&vertex] = vertexId;
-            vertexId++;
-        
-    }
+    processVoronoiVertices(vd, obstacles, vertexIdMap, vertexId);
+    processVoronoiEdges(vd, obstacles, zones, vertexIdMap);
     
+    const int voronCount = nodes.size();
+    
+    addStartEndNodes(startX, startY, endX, endY, vertexId);
+    connectStartEndToGraph(voronCount, startX, startY, endX, endY);
+    
+    buildAdjacencyMatrix();
+    buildAdjacencyList();
+}
+
+void Graph::processVoronoiVertices(const VoronoiDiagram& vd,
+                                  const std::vector<Obstacle>& obstacles,
+                                  std::unordered_map<const VoronoiDiagram::vertex_type*, int>& vertexIdMap,
+                                  int& vertexId) {
+    for (const auto& vertex : vd.vertices()) {
+        Graph::Node v;
+        v.id = vertexId;
+        v.x = vertex.x();
+        v.y = vertex.y();
+        v.isPrimary = true;
+        
+        bool insideObstacle = false;
+        for (const auto& obstacle : obstacles) {
+            if (obstacle.isPointInside(v.x, v.y)) {
+                insideObstacle = true;
+                break;
+            }
+        }
+        if (insideObstacle) continue;
+        
+        nodes.push_back(v);
+        vertexIdMap[&vertex] = vertexId;
+        vertexId++;
+    }
+}
+
+void Graph::processVoronoiEdges(const VoronoiDiagram& vd,
+                               const std::vector<Obstacle>& obstacles,
+                               const std::vector<SafeZone>& zones,
+                               std::unordered_map<const VoronoiDiagram::vertex_type*, int>& vertexIdMap) {
     for (const auto& edge : vd.edges()) {
         if (edge.is_finite()) {
             const auto* v0 = edge.vertex0();
@@ -95,9 +112,9 @@ void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  SceneData const* data) {
             }
         }
     }
-    
-    const int voronCount = nodes.size();
-    
+}
+
+void Graph::addStartEndNodes(cordType startX, cordType startY, cordType endX, cordType endY, int& vertexId) {
     Graph::Node start, end;
     start.id = vertexId++;
     start.x = startX;
@@ -111,15 +128,25 @@ void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  SceneData const* data) {
     
     nodes.push_back(start);
     nodes.push_back(end);
-    
+}
+
+void Graph::connectStartEndToGraph(int voronCount, cordType startX, cordType startY, cordType endX, cordType endY) {
     int closestToStartId = -1;
     int closestToEndId = -1;
     double minStartDist = std::numeric_limits<double>::max();
     double minEndDist = std::numeric_limits<double>::max();
     
+    Graph::Node startProxy;
+    startProxy.x = startX;
+    startProxy.y = startY;
+    
+    Graph::Node endProxy;
+    endProxy.x = endX;
+    endProxy.y = endY;
+    
     for (int i = 0; i < voronCount; i++) {
-        double distToStart = abs(nodes[i], start);
-        double distToEnd = abs(nodes[i], end);
+        double distToStart = abs(nodes[i], startProxy);
+        double distToEnd = abs(nodes[i], endProxy);
         
         if (distToStart < minStartDist) {
             minStartDist = distToStart;
@@ -134,23 +161,21 @@ void Graph::buildFromVoronoi(const VoronoiDiagram& vd,  SceneData const* data) {
     
     if (closestToStartId != -1) {
         Graph::Edge eStart;
-        eStart.from = start.id;
+        eStart.from = nodes[nodes.size() - 2].id;
         eStart.to = closestToStartId;
         eStart.weight = minStartDist;
         edges.push_back(eStart);
     }
     
-    if (closestToEndId != -1 ) {
+    if (closestToEndId != -1) {
         Graph::Edge eEnd;
-        eEnd.from = end.id;
+        eEnd.from = nodes[nodes.size() - 1].id;
         eEnd.to = closestToEndId;
         eEnd.weight = minEndDist;
         edges.push_back(eEnd);
     }
-    
-    buildAdjacencyMatrix();
-    buildAdjacencyList();
 }
+
 
 double Graph::calculateSafetyFactor(cordType x1, cordType y1, cordType x2, cordType y2,
                                    std::vector<SafeZone> const& zones) {

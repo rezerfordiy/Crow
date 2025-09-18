@@ -1,10 +1,6 @@
 #include <QMessageBox>
 #include <QCoreApplication>
 
-#include <boost/polygon/voronoi.hpp>
-#include <boost/polygon/point_data.hpp>
-#include <boost/polygon/segment_data.hpp>
-
 #include "GraphManager.h"
 #include "SceneData.h"
 

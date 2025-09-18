@@ -19,26 +19,30 @@ std::vector<Segment> Obstacle::getSegments() const {
 
 std::vector<Point> Obstacle::getPoints() const {
     std::vector<Point> ans;
+        
+    ans.emplace_back(x1, y1);
+    ans.emplace_back(x2, y1);
+    ans.emplace_back(x2, y2);
+    ans.emplace_back(x1, y2);
     
-    cordType x, y;
-    
-    for (x = x1; x < x2; x += dt) {
-        ans.emplace_back(x, y1);
+    if (dt > 0) {
+        for (cordType x = x1 + dt; x < x2; x += dt) {
+            ans.emplace_back(x, y1);
+        }
+        for (cordType y = y1 + dt; y < y2; y += dt) {
+            ans.emplace_back(x2, y);
+        }
+        for (cordType x = x2 - dt; x > x1; x -= dt) {
+            ans.emplace_back(x, y2);
+        }
+        for (cordType y = y2 - dt; y > y1; y -= dt) {
+            ans.emplace_back(x1, y);
+        }
     }
     
-    for (y = y1; y < y2; y += dt) {
-        ans.emplace_back(x2, y);
-    }
+    std::sort(ans.begin(), ans.end());
+    ans.erase(std::unique(ans.begin(), ans.end()), ans.end());
     
-    for (x = x2; x > x1; x -= dt) {
-        ans.emplace_back(x, y2);
-    }
-    
-    for (y = y2; y > y1; y -= dt) {
-        ans.emplace_back(x1, y);
-    }
-    
-
     return ans;
 }
 

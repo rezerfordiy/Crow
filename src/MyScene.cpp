@@ -88,19 +88,31 @@ void MyScene::updateFromJson(const QJsonObject& json) {
 }
 
 void MyScene::rebuildVoronoiDiagram() {
-    std::vector<Segment> segments;
-        
-        for (auto const& ob : data->getObstacles()) {
-            auto segs = ob.getSegments();
-            segments.insert(segments.end(), segs.begin(), segs.end());
-        }
+//    std::vector<Segment> segments;
+    std::vector<Point> points;
+    for (auto const& ob : data->getObstacles()) {
+        auto pnts = ob.getPoints();
+        points.insert(points.end(), pnts.begin(), pnts.end());
+    }
     
-    if (segments.empty()) return;
+    Obstacle fake(data->getTopleft().x() - 50, data->getTopleft().y() - 50, data->getBottomright().x() + 50, data->getBottomright().y() + 50);
+    auto borderPoints = fake.getPoints();
+    points.insert(points.end(), borderPoints.begin(), borderPoints.end());
     
+    
+//        for (auto const& ob : data->getObstacles()) {
+//            auto segs = ob.getSegments();
+//            segments.insert(segments.end(), segs.begin(), segs.end());
+//        }
+    
+//    if (segments.empty()) {return;}
+    
+    if (points.empty()) { return; }
+
     try {
             VoronoiDiagram vd;
             
-            boost::polygon::construct_voronoi(segments.begin(), segments.end(), &vd);
+            boost::polygon::construct_voronoi(points.begin(), points.end(), /*segments.begin(), segments.end(),*/ &vd);
             
             graph->buildFromVoronoi(vd, data.get());
         

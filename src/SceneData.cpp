@@ -12,7 +12,7 @@
 namespace bg = boost::geometry;
 namespace srs = bg::srs;
 
-SceneData::SceneData() : startPoint(0, 0), endPoint(800, 400) {}
+SceneData::SceneData(QObject* parent) : QObject(parent), startPoint(0, 0), endPoint(800, 400) {}
 
 void SceneData::clear() {
     obstacles.clear();

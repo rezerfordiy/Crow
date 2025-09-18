@@ -4,11 +4,13 @@
 #include <vector>
 
 #include <QPointF>
+#include <QObject>
 
 #include "Obstacle.h"
 #include "SafeZone.h"
 
-class SceneData {
+class SceneData: public QObject {
+    Q_OBJECT
 public:
     static std::pair<double, double> geographicToUtm(double longitude, double latitude);
 
@@ -22,7 +24,7 @@ public:
     QPointF topleft;
     QPointF bottomright;
     
-    SceneData();
+    SceneData(QObject* parent = nullptr);
     
     void clear();
     void updateBorders(const QPointF& point);

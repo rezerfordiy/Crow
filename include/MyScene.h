@@ -1,30 +1,19 @@
 #pragma once
+#include <vector>
 
 #include <QGraphicsScene>
 
-#include "SceneData.h"
-#include "Graph.h"
-#include "NetworkManager.h"
-
+class Graph;
+class SceneData;
 
 class MyScene : public QGraphicsScene {
     Q_OBJECT
 public:
     MyScene(QObject* parent = nullptr);
-    
-public slots:
-    void updateFromJson(const QJsonObject& json);
-    
+    void drawGraph(Graph const*);
+    void drawPath(std::vector<int> const& path, Graph const*);
+    void drawData(SceneData const* data);
+
 signals:
     void centerRequested();
-
-private:
-    std::unique_ptr<SceneData> data;
-    std::unique_ptr<Graph> graph;
-    std::unique_ptr<NetworkManager> networkManager;
-        
-    static std::pair<double, double> geographicToUtm(double longitude, double latitude);
-    
-    void rebuildVoronoiDiagram();
-    void drawData();
 };

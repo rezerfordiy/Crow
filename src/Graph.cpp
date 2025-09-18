@@ -1,4 +1,5 @@
-
+#include <unordered_map>
+#include <cmath>
 
 #include "SceneData.h"
 #include "Graph.h"
@@ -206,7 +207,7 @@ double Graph::calculateSafetyFactor(cordType x1, cordType y1, cordType x2, cordT
 
 
 void Graph::buildAdjacencyMatrix() {
-    int n = nodes.size();
+    const int n = nodes.size();
     matrix.resize(n, std::vector<int>(n, 0));
     
     for (const auto& edge : edges) {
@@ -216,7 +217,7 @@ void Graph::buildAdjacencyMatrix() {
 }
 
 void Graph::buildAdjacencyList() {
-    int n = nodes.size();
+    const int n = nodes.size();
     list.resize(n);
     
     for (const auto& edge : edges) {

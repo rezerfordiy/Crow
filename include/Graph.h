@@ -1,8 +1,5 @@
 #pragma once
 
-
-#include <unordered_map>
-#include <cmath>
 #include <vector>
 
 #include "Types.h"
@@ -10,6 +7,7 @@
 #include "SafeZone.h"
 
 class SceneData;
+class unordered_map;
 
 class Graph {
 public:

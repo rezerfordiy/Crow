@@ -26,7 +26,6 @@ MainWidget::MainWidget(QWidget* parent) : QWidget(parent),
                     QMessageBox::critical(nullptr, "Ошибка", error);
                     QCoreApplication::exit(1);
                 });
-    connect(scene, &MyScene::centerRequested, this, &MainWidget::centerOn);
         
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(view);
@@ -35,14 +34,6 @@ MainWidget::MainWidget(QWidget* parent) : QWidget(parent),
     resize(1400, 1000);
     
     networkManager->sendHttpRequest();
-}
-
-void MainWidget::centerOn() {
-
-    view->centerOn(QPointF(0, 0));
-    
-    view->setDragMode(QGraphicsView::ScrollHandDrag);
-    view->setInteractive(true);
 }
 
 void MainWidget::updateFromJson(const QJsonObject& json) {

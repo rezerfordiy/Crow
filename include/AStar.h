@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graph.h"
+class Graph;
 
 class AStar {
 public:

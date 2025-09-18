@@ -1,7 +1,7 @@
 #include <queue>
 
 #include "AStar.h"
-
+#include "Graph.h"
 
 std::vector<int> AStar::operator()(int from, int to, Graph const& g) const {
     if (from < 0 || from >= g.nodes.size() || to < 0 || to >= g.nodes.size()) {

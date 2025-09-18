@@ -15,7 +15,6 @@ class MainWidget : public QWidget {
 public:
     MainWidget(QWidget *parent = nullptr);
 public slots:
-    void centerOn();
     void updateFromJson(const QJsonObject& json);
 private:
     // ONLY FIRST U MUST REMEMBER

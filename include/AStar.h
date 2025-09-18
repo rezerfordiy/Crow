@@ -4,5 +4,5 @@
 
 class AStar {
 public:
-    static std::vector<int> findPath(int from, int to, const Graph& graph);
+    std::vector<int> operator()(int from, int to, const Graph& graph) const;
 };

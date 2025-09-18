@@ -119,7 +119,7 @@ void MyScene::rebuildVoronoiDiagram() {
             int startId = graph->nodes.size() - 2;
             int endId = graph->nodes.size() - 1;
             
-            auto path = AStar::findPath(startId, endId, *graph.get());
+            auto path = AStar()(startId, endId, *graph.get());
             
             if (!path.empty()) {
                 for (int i = 1; i < path.size(); i++) {

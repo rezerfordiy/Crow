@@ -3,7 +3,7 @@
 #include "AStar.h"
 
 
-std::vector<int> AStar::findPath(int from, int to, Graph const& g) {
+std::vector<int> AStar::operator()(int from, int to, Graph const& g) const {
     if (from < 0 || from >= g.nodes.size() || to < 0 || to >= g.nodes.size()) {
         return {};
     }

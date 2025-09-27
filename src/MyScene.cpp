@@ -49,22 +49,22 @@ void MyScene::drawPath(std::vector<int> const& path, Graph const* graph) {
         
         if (distance < 0.1) continue;
         
-        double theta_start = atan2(dy, dx);
-        double theta_end = theta_start;
+        double thetaStart = atan2(dy, dx);
+        double thetaEnd = thetaStart;
         
         if (i + 1 < path.size()) {
             int nextId = path[i+1];
             double x3 = graph->nodes[nextId].x;
             double y3 = graph->nodes[nextId].y;
-            double dx_next = x3 - x2;
-            double dy_next = y3 - y2;
-            if (sqrt(dx_next*dx_next + dy_next*dy_next) > 0.1) {
-                theta_end = atan2(dy_next, dx_next);
+            double dxNext = x3 - x2;
+            double dyNext = y3 - y2;
+            if (sqrt(dxNext*dxNext + dyNext*dyNext) > 0.1) {
+                thetaEnd = atan2(dyNext, dxNext);
             }
         }
         
-        double q0[3] = {x1, y1, theta_start};
-        double q1[3] = {x2, y2, theta_end};
+        double q0[3] = {x1, y1, thetaStart};
+        double q1[3] = {x2, y2, thetaEnd};
         double rho = distance * 0.4;
         
         DubinsPathItem* pathItem = new DubinsPathItem();

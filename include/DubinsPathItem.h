@@ -13,6 +13,9 @@ class DubinsPathItem : public QGraphicsItem {
 public:
     DubinsPathItem(QGraphicsItem* parent = nullptr);
     DubinsPathItem(const DubinsPath& path, QGraphicsItem* parent = nullptr);
+private:
+    DubinsPathItem(const DubinsPath& path, bool isValid, QGraphicsItem* parent = nullptr);
+public:
     
     QRectF boundingRect() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;

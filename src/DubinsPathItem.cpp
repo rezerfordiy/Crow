@@ -2,24 +2,24 @@
 
 #include "DubinsPathItem.h"
 
-DubinsPathItem::DubinsPathItem(QGraphicsItem* parent) : QGraphicsItem(parent), _isValid(false), _pathColor(Qt::green), _pathWidth(3.0) {
+DubinsPathItem::DubinsPathItem(QGraphicsItem* parent) : DubinsPathItem(DubinsPath(), false, parent) {
     _path.qi[0] = _path.qi[1] = _path.qi[2] = 0;
     _path.param[0] = _path.param[1] = _path.param[2] = 0;
     _path.rho = 1.0;
     _path.type = LSL;
-    
-    setFlag(QGraphicsItem::ItemIsSelectable, true);
-    setFlag(QGraphicsItem::ItemIsFocusable, true);
 }
 
-DubinsPathItem::DubinsPathItem(const DubinsPath& path, QGraphicsItem* parent) : QGraphicsItem(parent), _path(path), _isValid(true), _pathColor(Qt::green), _pathWidth(3.0) {
+DubinsPathItem::DubinsPathItem(const DubinsPath& path, QGraphicsItem* parent) : DubinsPathItem(path, true, parent) {}
+
+DubinsPathItem::DubinsPathItem(const DubinsPath& path, bool isValid, QGraphicsItem* parent) : QGraphicsItem(parent), _path(path), _isValid(isValid),_pathColor(Qt::green), _pathWidth(3.0) {
+    
     calculateBoundingRect();
     setFlag(QGraphicsItem::ItemIsSelectable, true);
     setFlag(QGraphicsItem::ItemIsFocusable, true);
 }
 
-void DubinsPathItem::calculateBoundingRect()
-{
+
+void DubinsPathItem::calculateBoundingRect() {
     if (!_isValid) {
         _boundingRect = QRectF(-10, -10, 20, 20);
         return;
@@ -31,8 +31,10 @@ void DubinsPathItem::calculateBoundingRect()
         return;
     }
     
-    double minX = points[0].x(), maxX = points[0].x();
-    double minY = points[0].y(), maxY = points[0].y();
+    double minX = points[0].x();
+    double maxX = points[0].x();
+    double minY = points[0].y();
+    double maxY = points[0].y();
     
     for (const QPointF& point : points) {
         minX = qMin(minX, point.x());
@@ -46,13 +48,11 @@ void DubinsPathItem::calculateBoundingRect()
                            maxX - minX + 2 * padding, maxY - minY + 2 * padding);
 }
 
-QRectF DubinsPathItem::boundingRect() const
-{
+QRectF DubinsPathItem::boundingRect() const {
     return _boundingRect;
 }
 
-void DubinsPathItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
-{
+void DubinsPathItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
     Q_UNUSED(option)
     Q_UNUSED(widget)
     
@@ -82,8 +82,7 @@ void DubinsPathItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     
 }
 
-QPointF DubinsPathItem::samplePoint(double t) const
-{
+QPointF DubinsPathItem::samplePoint(double t) const {
     double q[3];
     DubinsPath pathCopy = _path;
     if (dubins_path_sample(&pathCopy, t, q) == EDUBOK) {
@@ -92,8 +91,7 @@ QPointF DubinsPathItem::samplePoint(double t) const
     return QPointF();
 }
 
-QVector<QPointF> DubinsPathItem::getSampledPoints(int pointsCount) const
-{
+QVector<QPointF> DubinsPathItem::getSampledPoints(int pointsCount) const {
     QVector<QPointF> points;
     if (!_isValid) return points;
     
@@ -113,8 +111,7 @@ QVector<QPointF> DubinsPathItem::getSampledPoints(int pointsCount) const
     return points;
 }
 
-void DubinsPathItem::setPath(const DubinsPath& path)
-{
+void DubinsPathItem::setPath(const DubinsPath& path) {
     prepareGeometryChange();
     _path = path;
     _isValid = true;
@@ -122,8 +119,7 @@ void DubinsPathItem::setPath(const DubinsPath& path)
     update();
 }
 
-bool DubinsPathItem::findShortestPath(const double q0[3], const double q1[3], double rho)
-{
+bool DubinsPathItem::findShortestPath(const double q0[3], const double q1[3], double rho) {
     prepareGeometryChange();
     int result = dubins_shortest_path(&_path, const_cast<double*>(q0), const_cast<double*>(q1), rho);
     _isValid = (result == EDUBOK);
@@ -132,33 +128,28 @@ bool DubinsPathItem::findShortestPath(const double q0[3], const double q1[3], do
     return _isValid;
 }
 
-double DubinsPathItem::pathLength() const
-{
+double DubinsPathItem::pathLength() const {
     if (!_isValid) return 0.0;
     
     DubinsPath pathCopy = _path;
     return dubins_path_length(&pathCopy);
 }
 
-DubinsPathType DubinsPathItem::pathType() const
-{
+DubinsPathType DubinsPathItem::pathType() const {
     return _path.type;
 }
 
-bool DubinsPathItem::isValid() const
-{
+bool DubinsPathItem::isValid() const {
     return _isValid;
 }
 
-void DubinsPathItem::setPathColor(const QColor& color)
-{
+void DubinsPathItem::setPathColor(const QColor& color) {
     _pathColor = color;
     update();
 }
 
 
-void DubinsPathItem::setPathWidth(double width)
-{
+void DubinsPathItem::setPathWidth(double width) {
     _pathWidth = width;
     update();
 }

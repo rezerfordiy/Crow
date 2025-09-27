@@ -4,6 +4,7 @@
 #include "MyScene.h"
 #include "Graph.h"
 #include "SceneData.h"
+#include "DubinsPathItem.h"
 
 
 MyScene::MyScene(QObject* parent) : QGraphicsScene(parent) {}
@@ -31,26 +32,53 @@ void MyScene::drawGraph(Graph const * graph) {
 }
 
 void MyScene::drawPath(std::vector<int> const& path, Graph const* graph) {
-    if (!path.empty()) {
-        for (int i = 1; i < path.size(); i++) {
-            int fromId = path[i-1];
-            int toId = path[i];
+    if (path.size() < 2) return;
+
+    for (int i = 1; i < path.size(); i++) {
+        int fromId = path[i-1];
+        int toId = path[i];
+        
+        double x1 = graph->nodes[fromId].x;
+        double y1 = graph->nodes[fromId].y;
+        double x2 = graph->nodes[toId].x;
+        double y2 = graph->nodes[toId].y;
+        
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double distance = sqrt(dx*dx + dy*dy);
+        
+        if (distance < 0.1) continue;
+        
+        double theta_start = atan2(dy, dx);
+        double theta_end = theta_start;
+        
+        if (i + 1 < path.size()) {
+            int nextId = path[i+1];
+            double x3 = graph->nodes[nextId].x;
+            double y3 = graph->nodes[nextId].y;
+            double dx_next = x3 - x2;
+            double dy_next = y3 - y2;
+            if (sqrt(dx_next*dx_next + dy_next*dy_next) > 0.1) {
+                theta_end = atan2(dy_next, dx_next);
+            }
+        }
+        
+        double q0[3] = {x1, y1, theta_start};
+        double q1[3] = {x2, y2, theta_end};
+        double rho = distance * 0.4;
+        
+        DubinsPathItem* pathItem = new DubinsPathItem();
+        if (pathItem->findShortestPath(q0, q1, rho)) {
+            pathItem->setPathColor(QColor(0, 150, 0));
+            pathItem->setPathWidth(2.5);
+            pathItem->setZValue(10 + i);
             
-            double x1 = graph->nodes[fromId].x;
-            double y1 = graph->nodes[fromId].y;
-            double x2 = graph->nodes[toId].x;
-            double y2 = graph->nodes[toId].y;
-            
-            QGraphicsLineItem* line = new QGraphicsLineItem(x1, y1, x2, y2);
-            QPen pen(Qt::green);
-            pen.setWidth(3);
-            line->setPen(pen);
-            line->setZValue(10);
-            addItem(line);
+            addItem(pathItem);
+        } else {
+            delete pathItem; 
         }
     }
 }
-
 
 void MyScene::drawData(SceneData const* data) {
     for (auto ob : data->getObstacles()) {

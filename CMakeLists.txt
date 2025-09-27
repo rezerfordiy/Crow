@@ -33,6 +33,8 @@ set(SOURCES
     NetworkManager.cpp
     SceneData.cpp
     
+    dubins.cpp
+    DubinsPathItem.cpp
 )
 
 set(HEADERS
@@ -48,6 +50,9 @@ set(HEADERS
     GraphManager.h
     NetworkManager.h
     SceneData.h
+    
+    dubins.h
+    DubinsPathItem.h
 )
 
 # Create executable

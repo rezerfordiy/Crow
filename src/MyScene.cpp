@@ -31,7 +31,7 @@ void MyScene::drawGraph(Graph const * graph) {
     }
 }
 
-void MyScene::drawPath(std::vector<int> const& path, Graph const* graph) {
+void MyScene::drawPath(std::vector<int> const& path, Graph const* graph, const std::vector<Obstacle>& obstacles) {
     if (path.size() < 2) return;
 
     for (int i = 1; i < path.size(); i++) {
@@ -65,11 +65,26 @@ void MyScene::drawPath(std::vector<int> const& path, Graph const* graph) {
         
         double q0[3] = {x1, y1, thetaStart};
         double q1[3] = {x2, y2, thetaEnd};
-        double rho = distance * 0.4;
+        
+        
         
         DubinsPathItem* pathItem = new DubinsPathItem();
-        if (pathItem->findShortestPath(q0, q1, rho)) {
-            pathItem->setPathColor(QColor(0, 150, 0));
+        if (pathItem->findShortestPath(q0, q1, 200)) {
+            QVector<QPointF> pnts = pathItem->getSampledPoints(50);
+            
+            QColor clr = QColor(0, 150, 0);
+            for (auto const& pnt : pnts) {
+                bool insideObstacle = false;
+                for (const auto& obstacle : obstacles) {
+                    if (obstacle.isPointInside(pnt.x(), pnt.y())) {
+                        insideObstacle = true;
+                        break;
+                    }
+                }
+                if (insideObstacle) { clr = QColor(150, 0, 0); break; }
+            }
+            
+            pathItem->setPathColor(clr);
             pathItem->setPathWidth(2.5);
             pathItem->setZValue(10 + i);
             

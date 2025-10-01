@@ -89,7 +89,7 @@ void MainWidget::updateFromJson(const QJsonObject& json) {
         auto path = AStar()(startId, endId, graphManager->graph);
       
         scene->drawData(data);
-        scene->drawPath(path, &graphManager->graph);
+        scene->drawPath(path, &graphManager->graph, data->obstacles);
         scene->drawGraph(&graphManager->graph);
 
         

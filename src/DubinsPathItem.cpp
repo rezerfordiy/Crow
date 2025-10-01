@@ -93,13 +93,13 @@ QPointF DubinsPathItem::samplePoint(double t) const {
 
 QVector<QPointF> DubinsPathItem::getSampledPoints(int pointsCount) const {
     QVector<QPointF> points;
-    if (!_isValid) return points;
+    if (!_isValid) { return points; }
     
     DubinsPath pathCopy = _path;
     double length = dubins_path_length(&pathCopy);
-    if (length <= 0) return points;
+    if (length <= 0) { return points; }
     
-    for (int i = 0; i <= pointsCount; ++i) {
+    for (int i = 0; i <= pointsCount; i++) {
         double t = (length * i) / pointsCount;
         double q[3];
         
@@ -129,7 +129,7 @@ bool DubinsPathItem::findShortestPath(const double q0[3], const double q1[3], do
 }
 
 double DubinsPathItem::pathLength() const {
-    if (!_isValid) return 0.0;
+    if (!_isValid) { return 0.0; }
     
     DubinsPath pathCopy = _path;
     return dubins_path_length(&pathCopy);

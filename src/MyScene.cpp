@@ -1,17 +1,18 @@
 #include <QGraphicsRectItem>
 #include <QGraphicsLineItem>
+#include <QGraphicsSceneMouseEvent>
 
 #include "MyScene.h"
 #include "Graph.h"
 #include "SceneData.h"
 #include "DubinsPathItem.h"
-
+#include "MyEllipseItem.h"
 
 MyScene::MyScene(QObject* parent) : QGraphicsScene(parent) {}
 
 void MyScene::drawGraph(Graph const * graph) {
     for (const auto& node : graph->nodes) {
-        QGraphicsEllipseItem *point = new QGraphicsEllipseItem(node.x - 2, node.y - 2, 4, 4);
+        QGraphicsEllipseItem *point = new MyEllipseItem(node.id, node.x - 2, node.y - 2, 4, 4);
         point->setBrush(Qt::blue);
         point->setPen(Qt::NoPen);
         addItem(point);
@@ -31,9 +32,10 @@ void MyScene::drawGraph(Graph const * graph) {
     }
 }
 
-void MyScene::drawPath(std::vector<int> const& path, Graph const* graph, const std::vector<Obstacle>& obstacles) {
-    if (path.size() < 2) return;
-
+QVector<QGraphicsItem*> MyScene::drawPath(std::vector<int> const& path, Graph const* graph, const std::vector<Obstacle>& obstacles) {
+    if (path.size() < 2) return QVector<QGraphicsItem*>();
+    QVector<QGraphicsItem*> ans;
+    
     for (int i = 1; i < path.size(); i++) {
         int fromId = path[i-1];
         int toId = path[i];
@@ -69,7 +71,7 @@ void MyScene::drawPath(std::vector<int> const& path, Graph const* graph, const s
         
         
         DubinsPathItem* pathItem = new DubinsPathItem();
-        if (pathItem->findShortestPath(q0, q1, 200)) {
+        if (pathItem->findShortestPath(q0, q1, 10)) {
             QVector<QPointF> pnts = pathItem->getSampledPoints(50);
             
             QColor clr = QColor(0, 150, 0);
@@ -89,10 +91,13 @@ void MyScene::drawPath(std::vector<int> const& path, Graph const* graph, const s
             pathItem->setZValue(10 + i);
             
             addItem(pathItem);
+            ans.append(pathItem);
         } else {
             delete pathItem; 
         }
     }
+    
+    return ans;
 }
 
 void MyScene::drawData(SceneData const* data) {
@@ -109,16 +114,34 @@ void MyScene::drawData(SceneData const* data) {
     }
     
     
-    auto start = data->getStartPoint();
-    auto st = new QGraphicsEllipseItem(start.x() - 3, start.y() - 3, 6, 6);
-    st->setBrush(Qt::black);
-    st->setPen(Qt::NoPen);
-    addItem(st);
+//    auto start = data->getStartPoint();
+//    auto st = new MyEllipseItem(start.x() - 2, start.y() - 2, 4, 4);
+//    st->setBrush(Qt::black);
+//    st->setPen(Qt::NoPen);
+//    addItem(st);
+//    
+//    auto end = data->getEndPoint();
+//    auto e = new QGraphicsEllipseItem(end.x() - 2, end.y() - 2, 4, 4);
+//    e->setBrush(Qt::black);
+//    e->setPen(Qt::NoPen);
+//    addItem(e);
     
-    auto end = data->getEndPoint();
-    auto e = new QGraphicsEllipseItem(end.x() - 3, end.y() - 3, 6, 6);
-    e->setBrush(Qt::black);
-    e->setPen(Qt::NoPen);
-    addItem(e);
-    
+}
+
+
+
+void MyScene::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    if (!event->isAccepted()) {
+        QList<QGraphicsItem*> itms = items(event->scenePos());
+        for (auto item : itms) {
+            MyEllipseItem* it = dynamic_cast<MyEllipseItem*>(item);
+            if (it) {
+                emit pointChosen(it);
+                event->accept();
+                return;
+            }
+        }
+        
+    }
+    QGraphicsScene::mousePressEvent(event);
 }

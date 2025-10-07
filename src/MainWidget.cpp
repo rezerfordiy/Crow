@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QMessageBox>
 #include <QApplication>
+#include <QPushButton>
 
 #include "MainWidget.h"
 #include "MyScene.h"
@@ -11,6 +12,8 @@
 #include "NetworkManager.h"
 #include "SceneData.h"
 #include "AStar.h"
+#include "MyEllipseItem.h"
+
 
 MainWidget::MainWidget(QWidget* parent) : QWidget(parent),
     scene(new MyScene(this)),
@@ -27,8 +30,13 @@ MainWidget::MainWidget(QWidget* parent) : QWidget(parent),
                     QCoreApplication::exit(1);
                 });
         
+        connect(scene, &MyScene::pointChosen, this, &MainWidget::handlePointChose);
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(view);
+    auto bt = new QPushButton(this);
+    layout->addWidget(bt);
+    
+    connect(bt, &QPushButton::clicked, this, &MainWidget::cutPath);
         
     setLayout(layout);
     resize(1400, 1000);
@@ -88,8 +96,11 @@ void MainWidget::updateFromJson(const QJsonObject& json) {
         int endId = graphManager->graph.nodes.size() - 1;
         auto path = AStar()(startId, endId, graphManager->graph);
       
+        for (auto v:path) {
+            curPath.append(v);
+        }
         scene->drawData(data);
-        scene->drawPath(path, &graphManager->graph, data->obstacles);
+        drawnPath = scene->drawPath(path, &graphManager->graph, data->obstacles);
         scene->drawGraph(&graphManager->graph);
 
         
@@ -100,4 +111,70 @@ void MainWidget::updateFromJson(const QJsonObject& json) {
         QMessageBox::critical(nullptr, "Ошибка", "Неизвестные ошибки");
         QCoreApplication::exit(1);
     }
+}
+
+
+void MainWidget::handlePointChose(MyEllipseItem* item) {
+    if (!curPath.contains(item->number)) {
+          return;
+    }
+    if (!q.empty() && ((q.last() == item) || (q.first() == item))) {return;}
+
+    if (q.size() >= 2) {
+        auto gone = q.dequeue();
+        gone->setRect(graphManager->graph.nodes[gone->number].x - 2,
+                      graphManager->graph.nodes[gone->number].y - 2,
+                      4,
+                      4
+                      );
+        gone->update();
+    }
+    q.enqueue(item);
+    item->setRect(graphManager->graph.nodes[item->number].x - 5,
+                  graphManager->graph.nodes[item->number].y - 5,
+                  10,
+                  10
+                  );
+    item->update();
+}
+
+
+void MainWidget::cutPath() {
+    if (q.size() < 2) {return;}
+    
+    if (curPath.isEmpty()) {
+        return;
+    }
+    
+    int index1 = curPath.indexOf(q.first()->number);
+    int index2 = curPath.indexOf(q.last()->number);
+    
+    if (index1 == -1 || index2 == -1) {
+        return;
+    }
+    
+    int startIndex = std::min(index1, index2);
+    int endIndex = std::max(index1, index2);
+    
+    QVector<int> result;
+    std::vector<int> res;
+    result.reserve(curPath.size() - (endIndex - startIndex - 1));
+    
+    for (int i = 0; i < curPath.size(); ++i) {
+        if (i <= startIndex || i >= endIndex) {
+            result.append(curPath[i]);
+            res.push_back(curPath[i]);
+        }
+    }
+    
+    curPath = result;
+
+    for (auto item : drawnPath) {
+        if (item->scene()) {
+                item->scene()->removeItem(item);
+        }
+        delete item;
+    }
+    
+    drawnPath = scene->drawPath(res, &graphManager->graph, data->obstacles);
 }

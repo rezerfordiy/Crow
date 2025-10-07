@@ -14,7 +14,6 @@ DubinsPathItem::DubinsPathItem(const DubinsPath& path, QGraphicsItem* parent) : 
 DubinsPathItem::DubinsPathItem(const DubinsPath& path, bool isValid, QGraphicsItem* parent) : QGraphicsItem(parent), _path(path), _isValid(isValid),_pathColor(Qt::green), _pathWidth(3.0) {
     
     calculateBoundingRect();
-    setFlag(QGraphicsItem::ItemIsSelectable, true);
     setFlag(QGraphicsItem::ItemIsFocusable, true);
 }
 
